@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Orbit Clock - Concept by Robin Sharaya</title>
+    <meta name="author" content="Robin Sharaya">
+    <meta name="description" content="Orbit Clock Widget - Original concept by Robin Sharaya">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="assets/images/icon-192.png">
+    <meta property="og:title" content="Orbit Clock">
+    <meta property="og:description" content="Beautiful orbital clock concept">
+    <meta property="og:image" content="assets/images/screenshot.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .attribution {
+            position: fixed;
+            bottom: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .attribution a {
+            color: rgba(255, 59, 48, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .attribution a:hover {
+            color: #ff3b30;
+        }
+
+        .clock {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1c1c1c, #2c2c2c);
+            box-shadow: 
+                20px 20px 60px rgba(0, 0, 0, 0.5),
+                -20px -20px 60px rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+        }
+
+        @media (max-width: 600px) {
+            .clock {
+                width: 90vw;
+                height: 90vw;
+            }
+        }
+
+        .indicator {
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 12px;
+            background-color: #ff3b30;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(255, 59, 48, 0.5);
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        /* Second ring (outer) */
+        .second-ring {
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            background: linear-gradient(145deg, #232323, #2d2d2d);
+            z-index: 1;
+        }
+
+        /* Minute ring (middle) */
+        .minute-ring {
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+            background: linear-gradient(145deg, #282828, #323232);
+            z-index: 2;
+        }
+
+        /* Hour ring (inner) */
+        .hour-ring {
+            top: 35%;
+            left: 35%;
+            width: 30%;
+            height: 30%;
+            background: linear-gradient(145deg, #2d2d2d, #383838);
+            z-index: 3;
+        }
+
+        .number {
+            position: absolute;
+            text-align: center;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            transform-origin: center center;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.02);
+        }
+
+        .second-number {
+            font-size: 12px;
+            letter-spacing: 1px;
+            opacity: 0.6;
+        }
+
+        .minute-number {
+            font-size: 16px;
+            font-weight: 400;
+            opacity: 0.8;
+        }
+
+        .hour-number {
+            font-size: 20px;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        /* Highlight effect for numbers */
+        .number.active {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+            font-weight: 600;
+            opacity: 1;
+        }
+
+        /* Center decoration */
+        .center-circle {
+            position: absolute;
+            top: 48%;
+            left: 48%;
+            width: 4%;
+            height: 4%;
+            background: #ff3b30;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 59, 48, 0.5);
+            z-index: 4;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock">
+        <div class="indicator"></div>
+        <div class="ring second-ring" id="secondRing"></div>
+        <div class="ring minute-ring" id="minuteRing"></div>
+        <div class="ring hour-ring" id="hourRing"></div>
+        <div class="center-circle"></div>
+    </div>
+    <div class="attribution">
+        Concept by <a href="https://github.com/robinsharaya" target="_blank" rel="noopener">Robin Sharaya</a> © 2025
+    </div>
+
+    <script>
+        // Add Service Worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        function createRing(ringElement, count, className, step = 1) {
+            const ring = document.getElementById(ringElement);
+            const ringWidth = parseInt(window.getComputedStyle(ring).width);
+            const radius = ringWidth / 2 * 0.85;
+            
+            // Create multiple sets of numbers for infinite effect
+            const repetitions = 2; // Number of times to repeat the numbers
+            
+            for (let rep = 0; rep < repetitions; rep++) {
+                for (let i = 0; i < count; i += step) {
+                    const number = document.createElement('div');
+                    number.className = `number ${className}`;
+                    
+                    // Calculate display number
+                    const displayNum = i === 0 ? count : i;
+                    number.textContent = displayNum.toString().padStart(2, '0');
+                    
+                    // Position around the circle with offset for repetition
+                    const baseAngle = (i / count) * 360;
+                    const angle = baseAngle + (rep * 360) - 90;
+                    const radians = (angle * Math.PI) / 180;
+                    
+                    const x = Math.cos(radians) * radius;
+                    const y = Math.sin(radians) * radius;
+                    
+                    number.style.left = `calc(50% + ${x}px)`;
+                    number.style.top = `calc(50% + ${y}px)`;
+                    number.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
+                    
+                    ring.appendChild(number);
+                }
+            }
+        }
+
+        function updateActiveNumbers() {
+            const now = new Date();
+            const currentSecond = now.getSeconds();
+            const currentMinute = Math.floor(now.getMinutes() / 5) * 5;
+            const currentHour = now.getHours() % 12;
+
+            // Update active classes
+            document.querySelectorAll('.second-number').forEach((num, i) => {
+                const number = parseInt(num.textContent);
+                num.classList.toggle('active', number === currentSecond + 1);
+            });
+            
+            document.querySelectorAll('.minute-number').forEach(num => {
+                const number = parseInt(num.textContent);
+                num.classList.toggle('active', number === currentMinute);
+            });
+            
+            document.querySelectorAll('.hour-number').forEach(num => {
+                const number = parseInt(num.textContent);
+                num.classList.toggle('active', number === (currentHour === 0 ? 12 : currentHour));
+            });
+        }
+
+        function getTimeAngles() {
+            const now = new Date();
+            const startTime = new Date(now.getFullYear(), 0, 1); // Start of the year
+            const elapsed = now - startTime;
+            
+            // Calculate total rotations since start
+            const totalSeconds = elapsed / 1000;
+            const totalMinutes = totalSeconds / 60;
+            const totalHours = totalMinutes / 60;
+
+            // Calculate continuous angles without resetting
+            const secondsAngle = (totalSeconds * 6) % 720;  // 6 degrees per second, two full rotations
+            const minutesAngle = (totalMinutes * 6) % 720;  // 6 degrees per minute
+            const hoursAngle = (totalHours * 30) % 720;     // 30 degrees per hour
+
+            return {
+                seconds: -secondsAngle,
+                minutes: -minutesAngle,
+                hours: -hoursAngle
+            };
+        }
+
+        function updateClock() {
+            const angles = getTimeAngles();
+            
+            // Apply rotations without transitions for smooth continuous movement
+            const secondRing = document.getElementById('secondRing');
+            const minuteRing = document.getElementById('minuteRing');
+            const hourRing = document.getElementById('hourRing');
+            
+            // Use transform3d for better performance
+            secondRing.style.transform = `rotate3d(0,0,1,${angles.seconds}deg)`;
+            minuteRing.style.transform = `rotate3d(0,0,1,${angles.minutes}deg)`;
+            hourRing.style.transform = `rotate3d(0,0,1,${angles.hours}deg)`;
+            
+            // Update active numbers
+            updateActiveNumbers();
+            
+            // Update continuously
+            requestAnimationFrame(updateClock);
+        }
+
+        // Initialize and start the clock
+        window.addEventListener('DOMContentLoaded', () => {
+            // Create rings with infinite rotation setup
+            createRing('secondRing', 60, 'second-number', 1);  // All seconds
+            createRing('minuteRing', 60, 'minute-number', 5);  // Every 5 minutes
+            createRing('hourRing', 12, 'hour-number', 1);      // All hours
+            
+            // Start the infinite rotation
+            updateClock();
+        });
+    </script>
+</body>
+</html> 
