@@ -14,7 +14,7 @@ A beautiful, interactive circular clock widget with orbital rings representing h
 
 ## Live Demo
 
-You can see a live demo of the Orbit Clock [here](#) (add your demo URL when available).
+You can see a live demo of the Orbit Clock [here](https://iamrobinsharaya.github.io/orbit-clock/) .
 
 ## Installation
 
